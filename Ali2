@@ -1,0 +1,244 @@
+!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام مبيعات بسيط</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      background-color: #f9f9f9;
+      text-align: center;
+    }
+    .navbar {
+      background-color: #006400;
+      padding: 15px;
+      color: white;
+      font-size: 24px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .features {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .feature {
+      width: 150px;
+      height: 150px;
+      border-radius: 10px;
+      margin: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 16px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+    .feature i {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+    .feature:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    }
+    .feature-section {
+      padding: 20px;
+      margin: 20px;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    canvas {
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-page" id="loginPage">
+    <h2>تسجيل الدخول إلى النظام</h2>
+    <p>العنوان: الجزائر - العاصمة</p>
+    <input type="password" id="password" class="form-control" placeholder="كلمة المرور">
+    <br>
+    <button onclick="checkPassword()" class="btn btn-success">دخول</button>
+  </div>
+
+  <div class="navbar" id="navbar">
+    نظام إدارة المبيعات
+    <button class="btn btn-danger" onclick="logout()">خروج</button>
+  </div>
+
+  <h1>مميزات النظام</h1>
+
+  <div class="features" id="featuresSection">
+    <div class="feature sales bg-success" onclick="openFeature('المبيعات')">
+      <i class="fas fa-shopping-cart"></i>
+      <div>المبيعات</div>
+    </div>
+    <div class="feature buy bg-primary" onclick="openFeature('الشراء')">
+      <i class="fas fa-truck"></i>
+      <div>الشراء</div>
+    </div>
+    <div class="feature receipt bg-warning" onclick="openFeature('سند قبض')">
+      <i class="fas fa-receipt"></i>
+      <div>سند قبض</div>
+    </div>
+    <div class="feature items bg-secondary" onclick="openFeature('إدخال مواد')">
+      <i class="fas fa-box-open"></i>
+      <div>إدخال مواد</div>
+    </div>
+    <div class="feature losses bg-danger" onclick="openFeature('الخسائر')">
+      <i class="fas fa-chart-line"></i>
+      <div>الخسائر</div>
+    </div>
+    <div class="feature payment bg-info" onclick="openFeature('سند الدفع')">
+      <i class="fas fa-money-check-alt"></i>
+      <div>سند الدفع</div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('featuresSection').style.display = 'none';
+    document.querySelector('.navbar').style.display = 'none';
+
+    function checkPassword() {
+      let password = document.getElementById('password').value;
+      if (password === '1234') {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('featuresSection').style.display = 'flex';
+        document.querySelector('h1').style.display = 'block';
+        document.querySelector('.navbar').style.display = 'flex';
+      } else {
+        alert('كلمة المرور خاطئة!');
+      }
+    }
+
+    function logout() {
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('featuresSection').style.display = 'none';
+      document.querySelector('h1').style.display = 'none';
+      document.querySelector('.navbar').style.display = 'none';
+      document.getElementById('password').value = '';
+    }
+
+    function openFeature(name) {
+      document.getElementById('featuresSection').style.display = 'none';
+      document.querySelector('h1').style.display = 'none';
+      let featurePage = document.createElement('div');
+      featurePage.classList.add('feature-section');
+      featurePage.innerHTML = `
+        <div class='feature-title'>الصفحة: ${name}</div>
+        <button onclick="addData('${name}')" class="btn btn-primary">إضافة بيانات</button>
+        <button onclick="showData('${name}')" class="btn btn-info">عرض البيانات</button>
+        <button onclick="exportToExcel()" class="btn btn-warning">تصدير إلى Excel</button>
+        <div id="chartContainer">
+          <canvas id="${name}Chart"></canvas>
+        </div>
+        <div class='feature-table' id='${name}Table'></div>
+      `;
+      document.body.appendChild(featurePage);
+    }
+
+    function addData(feature) {
+      let name = prompt("أدخل اسم العنصر:");
+      let quantity = prompt("أدخل الكمية:");
+      let price = prompt("أدخل السعر:");
+      let date = prompt("أدخل التاريخ:");
+
+      let data = {
+        name: name,
+        quantity: quantity,
+        price: price,
+        date: date
+      };
+
+      let featureData = JSON.parse(localStorage.getItem(feature)) || [];
+      featureData.push(data);
+      localStorage.setItem(feature, JSON.stringify(featureData));
+
+      alert("تم إضافة البيانات!");
+    }
+
+    function showData(feature) {
+      let featureData = JSON.parse(localStorage.getItem(feature)) || [];
+      let table = document.getElementById(`${feature}Table`);
+      table.innerHTML = `
+        <table class="table">
+          <thead>
+            <tr>
+              <th>اسم العنصر</th>
+              <th>الكمية</th>
+              <th>السعر</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      featureData.forEach((item) => {
+        table.innerHTML += `
+          <tr>
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>${item.price}</td>
+            <td>${item.date}</td>
+          </tr>
+        `;
+      });
+      table.innerHTML += `</tbody></table>`;
+    }
+
+    function exportToExcel() {
+      let feature = 'المبيعات'; // سيتم تصدير مبيعات فقط كمثال
+      let data = JSON.parse(localStorage.getItem(feature)) || [];
+      let ws = XLSX.utils.json_to_sheet(data);
+      let wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, feature);
+      XLSX.writeFile(wb, `${feature}.xlsx`);
+    }
+
+    // الرسم البياني باستخدام Chart.js
+    function generateChart(feature) {
+      let featureData = JSON.parse(localStorage.getItem(feature)) || [];
+      let data = featureData.map(item => item.price * item.quantity);
+      let labels = featureData.map(item => item.date);
+      
+      let ctx = document.getElementById(`${feature}Chart`).getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: `${feature} البيانات`,
+            data: data,
+            borderColor: 'rgba(75, 192, 192, 1)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    window.onload = function() {
+      let feature = 'المبيعات'; // هذه هي الصفحة الافتراضية التي تعرض عند التحميل
+      generateChart(feature);
+    };
+  </script>
+
+</body>
+</html>
